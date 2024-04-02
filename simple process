@@ -1,0 +1,18 @@
+img = imread("your image.png");
+
+
+%set the max threshold of the reference img
+m = 10;
+%you can set the m with a Numeric slider in MatLab with stride = 1, min = 10, max = 15
+
+%set the max value of the input img
+t = 7;
+%you can set the t with a Numeric slider in MatLab with stride = 0.5, min = 5, max = 9.5
+
+%set the number of neighbors
+k = 40;
+%you can set the k with a Numeric slider in MatLab with stride = 1, min = 5, max = 40
+
+[imgnoword, imgadapt] = preprocess(img,t,k,m);
+
+montage({img, imgnoword, imgadapt},"Size",[1 3])
