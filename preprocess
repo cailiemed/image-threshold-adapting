@@ -1,0 +1,128 @@
+function [imgnoword, imgadapt] = preprocess(X,t,k,m)
+%img preprocessing include remove letters and color threshold customizing
+%in colored medical images
+%  
+%  
+%  
+
+% 
+%----------------------------------------------------
+
+X = im2double(X);
+X = rgb2hsv(X);
+
+% Fill dark place with blue color
+darkThreshold = 0.148;
+
+vChannel = X(:,:,3);
+
+darkMask = vChannel < darkThreshold;
+
+blueColor = [0.606, 1.000, 1.000]; 
+
+for channel = 1:3
+    channelData = X(:,:,channel);
+    channelData(darkMask) = blueColor(channel);
+    X(:,:,channel) = channelData;
+end
+
+X = im2double(X);
+
+X = hsv2rgb(X);
+
+% Create letter-masked img
+I = rgb2hsv(X);
+
+channel1Min = 0.000;
+channel1Max = 1.000;
+
+channel2Min = 0.700;
+channel2Max = 1.000;
+
+channel3Min = 0.000;
+channel3Max = 1.000;
+
+sliderBW = (I(:,:,1) >= channel1Min ) & (I(:,:,1) <= channel1Max) & ...
+    (I(:,:,2) >= channel2Min ) & (I(:,:,2) <= channel2Max) & ...
+    (I(:,:,3) >= channel3Min ) & (I(:,:,3) <= channel3Max);
+BW = sliderBW;
+
+maskedRGBImage = X;
+
+maskedRGBImage(repmat(~BW,[1 1 3])) = 0;
+
+BW = im2double(BW);
+BW = imcomplement(BW);
+
+radius = 6;
+decomposition = 0;
+
+se = strel('disk', radius, decomposition);
+expandedMask = imdilate(BW, se);
+expandedMask = logical(expandedMask);
+
+% remove letter
+%X = hsv2rgb(X);
+
+X(repmat(expandedMask, [1, 1, 3])) = 0;
+
+[R, G, B] = imsplit(X);
+
+[zrows, zcols] = find(R == 0 & G == 0 & B == 0);
+R = im2double(R);
+G = im2double(G);
+B = im2double(B);
+
+missingPositions = [zrows, zcols]; 
+
+for i = 1:size(missingPositions, 1)
+    row_coord = round(missingPositions(i, 1)); 
+    col_coord = round(missingPositions(i, 2)); 
+    
+    R(row_coord, col_coord) = NaN; 
+end
+
+for i = 1:size(missingPositions, 1)
+    row_coord = round(missingPositions(i, 1)); 
+    col_coord = round(missingPositions(i, 2)); 
+    
+    G(row_coord, col_coord) = NaN;
+end
+
+for i = 1:size(missingPositions, 1)
+    row_coord = round(missingPositions(i, 1));
+    col_coord = round(missingPositions(i, 2)); 
+    
+    
+    
+    B(row_coord, col_coord) = NaN;
+end
+
+rImputed = knnimpute(R, k);
+gImputed = knnimpute(G, k);
+bImputed = knnimpute(B, k);
+imgnoword = cat(3,rImputed, gImputed, bImputed);
+
+%threshold customizing
+imgnoword = rgb2hsv(imgnoword);
+
+[h,s,v] = imsplit(imgnoword);
+%h(h>0.98) =0.001;
+h(h>0.80) =0.001;
+%h(h==0) = 0.001;
+
+%if max threshold equals 10
+%h = ((1.5*t - 0.75)*h - t + 10)/14.25;
+
+h = ((1.5*t - 0.75)*h - t + m)/((m-0.5)*1.5);
+
+v(v~=1)=1;
+s(s~=1)=1;
+
+imgadapt = cat(3,h,s,v);
+imgadapt = hsv2rgb(imgadapt);
+
+imgnoword = hsv2rgb(imgnoword);
+
+end
+
