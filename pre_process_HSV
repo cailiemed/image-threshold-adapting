@@ -1,4 +1,4 @@
-function [imgnoword, imgadapt] = preprocess(X,t,k,m)
+function [imgnoword, imgadapt] = pre_process_HSV(X,t,k,m)
 %img preprocessing include remove letters and color threshold customizing
 %in colored medical images
 %  
